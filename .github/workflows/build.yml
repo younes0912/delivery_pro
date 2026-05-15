@@ -1,4 +1,4 @@
-name: Build Wassalni Ultimate
+name: Build Wassalni Final
 on: [push, pull_request]
 
 jobs:
@@ -23,24 +23,30 @@ jobs:
       - name: Install Build Tools
         run: |
           pip install --upgrade pip
-          pip install "cython<3.0.0" wheel buildozer
+          pip install "cython<3.0.0" wheel "buildozer>=1.5.0"
 
-      - name: Final Root Fix Build
+      - name: The Golden Build
         run: |
+          # تنظيف شامل
           rm -f buildozer.spec
           rm -rf .buildozer/
+          
           buildozer init
           
-          # إعدادات احترافية لضمان التوافق مع متجر جوجل وهواتف أندرويد الحديثة
+          # إعدادات الاستقرار (مبنية على أخطاء الصور السابقة)
           sed -i 's/^title = .*/title = Wassalni/' buildozer.spec
           sed -i 's/^package.name = .*/package.name = wassalni/' buildozer.spec
           sed -i 's/^requirements = .*/requirements = python3==3.9.10,kivy==2.3.0,kivymd==1.2.0,pillow,arabic-reshaper,python-bidi/' buildozer.spec
+          
+          # إصلاح المعالجات: نختار معمارية واحدة فقط (arm64-v8a) لضمان النجاح وتجنب تعارض الملفات
           sed -i 's/^#android.archs = .*/android.archs = arm64-v8a/' buildozer.spec
-          sed -i 's/^#android.api = .*/android.api = 33/' buildozer.spec
-          sed -i 's/^#android.minapi = .*/android.minapi = 24/' buildozer.spec
+          
+          # تثبيت إصدارات الأدوات المتوافقة تماماً
+          sed -i 's/^#android.api = .*/android.api = 31/' buildozer.spec
+          sed -i 's/^#android.minapi = .*/android.minapi = 21/' buildozer.spec
           sed -i 's/^#android.accept_sdk_license = .*/android.accept_sdk_license = True/' buildozer.spec
           
-          # السطر السحري لقبول كافة التراخيص يدوياً قبل البناء
+          # قبول التراخيص قسرياً
           mkdir -p ~/.android && touch ~/.android/repositories.cfg
           yes | buildozer android debug
           
