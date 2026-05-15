@@ -1,4 +1,4 @@
-name: Build APK
+name: Build Android APK
 on: [push]
 
 jobs:
@@ -7,21 +7,32 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Dependencies
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
         run: |
-          sudo apt update
-          sudo apt install -y git zip unzip autoconf autotools-dev libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 cmake libffi-dev libssl-dev
+          pip install --upgrade pip
           pip install buildozer cython kivy
 
-      - name: Build with Buildozer
+      - name: Build APK
         run: |
-          yes | buildozer init
+          # تثبيت أدوات الأندرويد الأساسية
+          sudo apt-get install -y zip unzip autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 cmake libffi-dev libssl-dev
+          
+          # إنشاء ملف buildozer.spec تلقائياً وتعديله
+          buildozer init
           sed -i 's/package.name = myapp/package.name = deliverypro/' buildozer.spec
           sed -i 's/title = My Application/title = DeliveryPro/' buildozer.spec
-          buildozer android debug
-
-      - name: Upload Artifact
+          sed -i 's/#android.accept_sdk_license = False/android.accept_sdk_license = True/' buildozer.spec
+          
+          # بدء البناء (هذا السطر سيستغرق وقتاً)
+          buildozer -v android debug
+          
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: my-delivery-app
+          name: delivery-app
           path: bin/*.apk
