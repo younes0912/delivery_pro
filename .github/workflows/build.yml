@@ -14,14 +14,18 @@ jobs:
         run: |
           sudo apt update
           sudo apt install -y git zip unzip autoconf autotools-dev libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 cmake libffi-dev libssl-dev
+          pip install --upgrade pip
           pip install buildozer cython kivy
-      - name: Build APK with Buildozer
+      - name: Build APK
         run: |
-          yes | buildozer init
-          # هنا نقوم بتعديل اسم التطبيق تلقائياً
-          sed -i 's/package.name = myapp/package.name = deliverypro/' buildozer.spec
-          sed -i 's/title = My Application/title = Delivery Pro/' buildozer.spec
-          buildozer android debug
+          # إنشاء ملف الإعدادات إذا لم يكن موجوداً
+          if [ ! -f buildozer.spec ]; then
+            buildozer init
+            sed -i 's/package.name = myapp/package.name = deliverypro/' buildozer.spec
+            sed -i 's/title = My Application/title = Delivery Pro/' buildozer.spec
+          fi
+          # تشغيل البناء
+          buildozer -v android debug
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
