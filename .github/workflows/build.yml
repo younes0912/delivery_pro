@@ -3,31 +3,32 @@ on: [push, pull_request]
 
 jobs:
   build:
-    runs-on: ubuntu-22.04  # استخدمنا نسخة أقدم قليلاً لضمان توافق الأدوات
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: '3.9' # إصدار أكثر استقراراً لـ KivyMD
 
       - name: Install dependencies
         run: |
           pip install --upgrade pip
-          pip install buildozer cython kivy kivymd
+          pip install buildozer cython==0.29.33 kivy kivymd
 
       - name: Build APK
         run: |
-          # تثبيت الأدوات الأساسية المتوفرة في هذه النسخة
           sudo apt-get update
-          sudo apt-get install -y zip unzip autoconf libtool pkg-config zlib1g-dev libncurses5 libtinfo5 libncursesw5  cmake
+          sudo apt-get install -y zip unzip autoconf libtool pkg-config zlib1g-dev libncurses5 libtinfo5 libncursesw5 cmake libffi-dev libssl-dev
           
-          # إعداد buildozer وتثبيت المكتبات داخل التطبيق
+          # إنشاء الإعدادات وضبطها بدقة
           buildozer init
-          sed -i 's/requirements = python3,kivy/requirements = python3,kivy,kivymd/g' buildozer.spec
+          sed -i 's/requirements = python3,kivy/requirements = python3,kivy==2.3.0,kivymd==1.2.0,pillow/g' buildozer.spec
+          sed -i 's/#android.permissions = INTERNET/android.permissions = INTERNET,WRITE_EXTERNAL_STORAGE/g' buildozer.spec
+          sed -i 's/#android.archs = armeabi-v7a/android.archs = armeabi-v7a, arm64-v8a/g' buildozer.spec
           
-          # قبول التراخيص وبدء البناء
+          # بدء البناء مع قبول التراخيص
           yes | buildozer android debug
 
       - name: Upload APK
