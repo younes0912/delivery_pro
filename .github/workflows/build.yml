@@ -12,7 +12,7 @@ jobs:
         with:
           python-version: '3.9'
 
-      - name: Install System Dependencies
+      - name: Install Dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential libffi-dev libssl-dev python3-dev \
@@ -20,34 +20,47 @@ jobs:
             libncurses5-dev libncursesw5-dev libtinfo5 cmake libgdbm-dev \
             libnss3-dev libreadline-dev wget curl openjdk-17-jdk
 
-      - name: Install Build Tools
+      - name: Install Python Tools
         run: |
           pip install --upgrade pip
           pip install "cython<3.0.0" wheel "buildozer>=1.5.0"
 
-      - name: The Golden Build
+      - name: Create Perfect Buildozer Spec
         run: |
-          # تنظيف شامل
+          # حذف أي أثار سابقة لضمان بيئة نظيفة تماماً
           rm -f buildozer.spec
           rm -rf .buildozer/
           
-          buildozer init
-          
-          # إعدادات الاستقرار (مبنية على أخطاء الصور السابقة)
-          sed -i 's/^title = .*/title = Wassalni/' buildozer.spec
-          sed -i 's/^package.name = .*/package.name = wassalni/' buildozer.spec
-          sed -i 's/^requirements = .*/requirements = python3==3.9.10,kivy==2.3.0,kivymd==1.2.0,pillow,arabic-reshaper,python-bidi/' buildozer.spec
-          
-          # إصلاح المعالجات: نختار معمارية واحدة فقط (arm64-v8a) لضمان النجاح وتجنب تعارض الملفات
-          sed -i 's/^#android.archs = .*/android.archs = arm64-v8a/' buildozer.spec
-          
-          # تثبيت إصدارات الأدوات المتوافقة تماماً
-          sed -i 's/^#android.api = .*/android.api = 31/' buildozer.spec
-          sed -i 's/^#android.minapi = .*/android.minapi = 21/' buildozer.spec
-          sed -i 's/^#android.accept_sdk_license = .*/android.accept_sdk_license = True/' buildozer.spec
-          
-          # قبول التراخيص قسرياً
+          # كتابة ملف الإعدادات من الصفر (النسخة الأكثر استقراراً لعام 2026)
+          cat <<EOF > buildozer.spec
+          [app]
+          title = Wassalni
+          package.name = wassalni
+          package.domain = org.younes
+          source.dir = .
+          source.include_exts = py,png,jpg,kv,atlas,json
+          version = 0.1
+          requirements = python3==3.9.10,kivy==2.3.0,kivymd==1.2.0,pillow,arabic-reshaper,python-bidi
+          orientation = portrait
+          osx.python_version = 3
+          osx.kivy_version = 2.3.0
+          fullscreen = 0
+          android.archs = arm64-v8a
+          android.api = 31
+          android.minapi = 21
+          android.ndk = 25b
+          android.sdk = 31
+          android.accept_sdk_license = True
+          android.log_level = 2
+          [buildozer]
+          log_level = 2
+          warn_on_root = 1
+          EOF
+
+      - name: Run Ultimate Build
+        run: |
           mkdir -p ~/.android && touch ~/.android/repositories.cfg
+          # استخدام سطر واحد مباشر للبناء لتفدي مشاكل الأنابيب
           yes | buildozer android debug
           
       - name: Upload APK
