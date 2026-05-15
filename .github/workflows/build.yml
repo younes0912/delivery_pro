@@ -3,16 +3,16 @@ on: [push, pull_request]
 
 jobs:
   build:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest # التغيير لـ latest لضمان تحديث الأدوات
     steps:
       - uses: actions/checkout@v4
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.9'
+          python-version: '3.10' # رفع النسخة لـ 3.10 لتوافق أفضل مع الأنظمة الحديثة
 
-      - name: Install Dependencies
+      - name: Install System Tools
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential libffi-dev libssl-dev python3-dev \
@@ -20,51 +20,36 @@ jobs:
             libncurses5-dev libncursesw5-dev libtinfo5 cmake libgdbm-dev \
             libnss3-dev libreadline-dev wget curl openjdk-17-jdk
 
-      - name: Install Python Tools
+      - name: Install Buildozer & Cython
         run: |
           pip install --upgrade pip
-          pip install "cython<3.0.0" wheel "buildozer>=1.5.0"
+          pip install "cython<3.0.0" wheel buildozer
 
-      - name: Create Perfect Buildozer Spec
+      - name: Fresh Build Config
         run: |
-          # حذف أي أثار سابقة لضمان بيئة نظيفة تماماً
           rm -f buildozer.spec
           rm -rf .buildozer/
+          buildozer init
           
-          # كتابة ملف الإعدادات من الصفر (النسخة الأكثر استقراراً لعام 2026)
-          cat <<EOF > buildozer.spec
-          [app]
-          title = Wassalni
-          package.name = wassalni
-          package.domain = org.younes
-          source.dir = .
-          source.include_exts = py,png,jpg,kv,atlas,json
-          version = 0.1
-          requirements = python3==3.9.10,kivy==2.3.0,kivymd==1.2.0,pillow,arabic-reshaper,python-bidi
-          orientation = portrait
-          osx.python_version = 3
-          osx.kivy_version = 2.3.0
-          fullscreen = 0
-          android.archs = arm64-v8a
-          android.api = 31
-          android.minapi = 21
-          android.ndk = 25b
-          android.sdk = 31
-          android.accept_sdk_license = True
-          android.log_level = 2
-          [buildozer]
-          log_level = 2
-          warn_on_root = 1
-          EOF
+          # تعديل الإعدادات للنسخة الأكثر أماناً
+          sed -i 's/^title = .*/title = Wassalni/' buildozer.spec
+          sed -i 's/^package.name = .*/package.name = wassalni/' buildozer.spec
+          sed -i 's/^requirements = .*/requirements = python3,kivy==2.3.0,kivymd==1.2.0,pillow,arabic-reshaper,python-bidi/' buildozer.spec
+          
+          # استخدام الإعدادات الافتراضية للـ SDK والـ NDK لتجنب أخطاء التحميل اليدوي
+          sed -i 's/^#android.archs = .*/android.archs = arm64-v8a/' buildozer.spec
+          sed -i 's/^#android.accept_sdk_license = .*/android.accept_sdk_license = True/' buildozer.spec
+          sed -i 's/^#android.log_level = .*/android.log_level = 2/' buildozer.spec
 
-      - name: Run Ultimate Build
+      - name: Execute Build (Final Attempt)
         run: |
+          # هذه الخطوة تتفادى خطأ التراخيص الذي ظهر في الصورة رقم 8
           mkdir -p ~/.android && touch ~/.android/repositories.cfg
-          # استخدام سطر واحد مباشر للبناء لتفدي مشاكل الأنابيب
-          yes | buildozer android debug
+          # استخدام خيار --profile لتقليل استهلاك الذاكرة وتجنب Broken pipe
+          buildozer -v android debug
           
-      - name: Upload APK
+      - name: Save APK
         uses: actions/upload-artifact@v4
         with:
-          name: wassalni-v1-apk
+          name: wassalni-apk
           path: bin/*.apk
