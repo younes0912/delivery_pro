@@ -1,5 +1,5 @@
-name: Build Android APK
-on: [push]
+name: Build Delivery Pro APK
+on: [push, pull_request]
 
 jobs:
   build:
@@ -15,25 +15,24 @@ jobs:
       - name: Install dependencies
         run: |
           pip install --upgrade pip
-          pip install buildozer cython kivy
+          pip install buildozer cython kivy kivymd
 
       - name: Build APK
         run: |
-          # تثبيت الأدوات الأساسية
+          # تثبيت المكتبات اللازمة لحل مشكلة libtinfo5 والتراخيص
           sudo apt-get update
-          sudo apt-get install -y zip unzip autoconf libtool pkg-config zlib1g-dev libncursesw5-dev cmake libffi-dev libssl-dev
+          sudo apt-get install -y libncurses5 libtinfo5 zip unzip autoconf libtool pkg-config zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libreadline-dev libffi-dev
           
-          # إنشاء ملف الإعدادات والموافقة على التراخيص
+          # إعداد buildozer بشكل آلي وتعديل الإعدادات
           buildozer init
-          sed -i 's/package.name = myapp/package.name = deliverypro/' buildozer.spec
-          sed -i 's/title = My Application/title = DeliveryPro/' buildozer.spec
+          sed -i 's/requirements = python3,kivy/requirements = python3,kivy,kivymd/g' buildozer.spec
+          sed -i 's/#android.permissions = INTERNET/android.permissions = INTERNET,WRITE_EXTERNAL_STORAGE/g' buildozer.spec
           
-          # إجبار النظام على قبول كافة تراخيص الأندرويد (حل مشكلة الصورة الأخيرة)
-          mkdir -p ~/.android && touch ~/.android/repositories.cfg
+          # قبول التراخيص وبدء البناء (يحل مشكلة Broken pipe)
           yes | buildozer android debug
-          
+
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: delivery-app
+          name: delivery-pro-app
           path: bin/*.apk
