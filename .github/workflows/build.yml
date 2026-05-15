@@ -19,16 +19,17 @@ jobs:
 
       - name: Build APK
         run: |
-          # تثبيت أدوات الأندرويد الأساسية
-          sudo apt-get install -y zip unzip autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 cmake libffi-dev libssl-dev
+          # تثبيت الأدوات الصحيحة والمتوفرة حالياً
+          sudo apt-get update
+          sudo apt-get install -y zip unzip autoconf libtool pkg-config zlib1g-dev libncursesw5-dev cmake libffi-dev libssl-dev
           
-          # إنشاء ملف buildozer.spec تلقائياً وتعديله
+          # إنشاء الإعدادات والموافقة على التراخيص
           buildozer init
           sed -i 's/package.name = myapp/package.name = deliverypro/' buildozer.spec
           sed -i 's/title = My Application/title = DeliveryPro/' buildozer.spec
           sed -i 's/#android.accept_sdk_license = False/android.accept_sdk_license = True/' buildozer.spec
           
-          # بدء البناء (هذا السطر سيستغرق وقتاً)
+          # بدء البناء
           buildozer -v android debug
           
       - name: Upload APK
