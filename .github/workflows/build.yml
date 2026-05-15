@@ -3,14 +3,15 @@ on: [push, pull_request]
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    # نثبت النسخة على 20.04 لأنها تدعم المكتبات التي يحتاجها أندرويد بشكل أفضل
+    runs-on: ubuntu-20.04 
     steps:
       - uses: actions/checkout@v4
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: '3.9'
 
       - name: Install System Dependencies
         run: |
@@ -20,37 +21,35 @@ jobs:
             libncurses5-dev libncursesw5-dev libtinfo5 cmake libgdbm-dev \
             libnss3-dev libreadline-dev wget curl openjdk-17-jdk
 
-      - name: Install Python Tools
+      - name: Install Build Tools
         run: |
           pip install --upgrade pip
-          pip install "cython<3.0.0" wheel "buildozer>=1.5.0"
+          pip install "cython<3.0.0" wheel buildozer
 
       - name: Ultimate Clean & Build
         run: |
-          # تنظيف الملفات القديمة التي تسببت في أخطاء الصور السابقة
           rm -f buildozer.spec
           rm -rf .buildozer/
-          
           buildozer init
           
-          # إعدادات الاستقرار (Golden Configuration)
+          # إعدادات لضمان التوافق التام وتجنب أخطاء الصور السابقة
           sed -i 's/^title = .*/title = Wassalni/' buildozer.spec
           sed -i 's/^package.name = .*/package.name = wassalni/' buildozer.spec
-          sed -i 's/^requirements = .*/requirements = python3,kivy==2.3.0,kivymd==1.2.0,pillow,arabic-reshaper,python-bidi/' buildozer.spec
+          sed -i 's/^requirements = .*/requirements = python3==3.9.10,kivy==2.3.0,kivymd==1.2.0,pillow,arabic-reshaper,python-bidi/' buildozer.spec
           
-          # تثبيت معمارية واحدة فقط لتفادي خطأ Broken pipe الموضح في لقطة الشاشة
+          # تثبيت معمارية واحدة فقط لتجنب استهلاك الذاكرة (حل مشكلة Broken pipe)
           sed -i 's/^#android.archs = .*/android.archs = arm64-v8a/' buildozer.spec
           
-          # استخدام إصدار SDK مستقر
+          # استخدام API 31 المستقر
           sed -i 's/^#android.api = .*/android.api = 31/' buildozer.spec
           sed -i 's/^#android.accept_sdk_license = .*/android.accept_sdk_license = True/' buildozer.spec
           
-          # قبول التراخيص قسرياً قبل البدء
+          # قبول التراخيص قسرياً وبدء البناء
           mkdir -p ~/.android && touch ~/.android/repositories.cfg
           yes | buildozer -v android debug
           
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: wassalni-apk-v1
+          name: wassalni-apk
           path: bin/*.apk
