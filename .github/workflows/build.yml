@@ -19,18 +19,18 @@ jobs:
 
       - name: Build APK
         run: |
-          # تثبيت الأدوات الصحيحة والمتوفرة حالياً
+          # تثبيت الأدوات الأساسية
           sudo apt-get update
           sudo apt-get install -y zip unzip autoconf libtool pkg-config zlib1g-dev libncursesw5-dev cmake libffi-dev libssl-dev
           
-          # إنشاء الإعدادات والموافقة على التراخيص
+          # إنشاء ملف الإعدادات والموافقة على التراخيص
           buildozer init
           sed -i 's/package.name = myapp/package.name = deliverypro/' buildozer.spec
           sed -i 's/title = My Application/title = DeliveryPro/' buildozer.spec
-          sed -i 's/#android.accept_sdk_license = False/android.accept_sdk_license = True/' buildozer.spec
           
-          # بدء البناء
-          buildozer -v android debug
+          # إجبار النظام على قبول كافة تراخيص الأندرويد (حل مشكلة الصورة الأخيرة)
+          mkdir -p ~/.android && touch ~/.android/repositories.cfg
+          yes | buildozer android debug
           
       - name: Upload APK
         uses: actions/upload-artifact@v4
