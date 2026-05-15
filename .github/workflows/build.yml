@@ -1,38 +1,54 @@
-name: Build Delivery Pro APK
+name: Build Wassalni APK
 on: [push, pull_request]
 
 jobs:
   build:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-22.04 # النسخة الأكثر استقراراً لـ Buildozer
     steps:
       - uses: actions/checkout@v4
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.9' # إصدار أكثر استقراراً لـ KivyMD
+          python-version: '3.9' # بايثون 3.9 هو "الملك" في استقرار بناء الأندرويد
 
-      - name: Install dependencies
+      - name: Install System Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential libffi-dev libssl-dev python3-dev \
+            zip unzip autoconf libtool pkg-config zlib1g-dev \
+            libncurses5-dev libncursesw5-dev libtinfo5 \
+            cmake libgdbm-dev libnss3-dev libreadline-dev \
+            wget curl audacity
+            
+      - name: Install Python Tools
         run: |
           pip install --upgrade pip
-          pip install buildozer cython==0.29.33 kivy kivymd
+          pip install "cython<3.0.0" wheel # Cython 3 يسبب كوارث، نستخدم نسخة 0.29
+          pip install "buildozer>=1.5.0"
 
       - name: Build APK
         run: |
-          sudo apt-get update
-          sudo apt-get install -y zip unzip autoconf libtool pkg-config zlib1g-dev libncurses5 libtinfo5 libncursesw5 cmake libffi-dev libssl-dev
+          # تنظيف أي محاولات فاشلة سابقة
+          rm -rf .buildozer/
           
-          # إنشاء الإعدادات وضبطها بدقة
+          # إعداد الملف بأسماء متوافقة
           buildozer init
-          sed -i 's/requirements = python3,kivy/requirements = python3,kivy==2.3.0,kivymd==1.2.0,pillow/g' buildozer.spec
-          sed -i 's/#android.permissions = INTERNET/android.permissions = INTERNET,WRITE_EXTERNAL_STORAGE/g' buildozer.spec
-          sed -i 's/#android.archs = armeabi-v7a/android.archs = armeabi-v7a, arm64-v8a/g' buildozer.spec
           
-          # بدء البناء مع قبول التراخيص
+          # تعديل المواصفات برمجياً لضمان الدقة
+          sed -i 's/^package.name = .*/package.name = wassalni/' buildozer.spec
+          sed -i 's/^title = .*/title = Wassalni/' buildozer.spec
+          sed -i 's/^requirements = .*/requirements = python3==3.9.10,kivy==2.3.0,kivymd==1.2.0,pillow,arabic-reshaper,python-bidi/' buildozer.spec
+          sed -i 's/^#android.archs = .*/android.archs = arm64-v8a/' buildozer.spec
+          sed -i 's/^#android.accept_sdk_license = .*/android.accept_sdk_license = True/' buildozer.spec
+          sed -i 's/^#android.api = .*/android.api = 33/' buildozer.spec
+          
+          # التشغيل النهائي
           yes | buildozer android debug
-
+          
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: delivery-pro-app
+          name: wassalni-final-app
           path: bin/*.apk
